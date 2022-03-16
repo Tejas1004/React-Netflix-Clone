@@ -1,7 +1,8 @@
 const router = require("express").Router();
 const List = require("../models/List");
 const verify = require("../verifyToken");
-
+const dotenv = require("dotenv");
+dotenv.config();
 //CREATE
 
 router.post("/", verify, async (req, res) => {

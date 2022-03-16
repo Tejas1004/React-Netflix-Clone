@@ -1,11 +1,10 @@
-const express = require('express');
-const router = express();
+const router = require("express").Router();
+const User = require("../models/User");
 const CryptoJS = require("crypto-js");
-const User = require('../models/Users');
 const jwt = require("jsonwebtoken");
-require('dotenv').config();
-
-//Login And Registration Module
+const dotenv = require("dotenv");
+dotenv.config();
+//REGISTER
 router.post("/register", async (req, res) => {
   const newUser = new User({
     username: req.body.username,
@@ -17,35 +16,36 @@ router.post("/register", async (req, res) => {
   });
   try {
     const user = await newUser.save();
-    res.status(201).send("Netflix Account Successfully ");
+    res.status(201).json(user);
   } catch (err) {
-    res.status(401).send("Oops!Got an error",err);
+    res.status(500).json(err);
   }
 });
 
-router.post("/login",async(req,res)=>{
-    try {
-        const user = await User.findOne({ email: req.body.email });
-        !user && res.status(404).send("Wrong Credentials");
+//LOGIN
+router.post("/login", async (req, res) => {
+  try {
+    const user = await User.findOne({ email: req.body.email });
+    !user && res.status(401).json("Wrong password or username!");
 
-        const bytes = CryptoJS.AES.decrypt(user.password, process.env.SECRET_KEY);
-        const originalPassword = bytes.toString(CryptoJS.enc.Utf8);
-       
-        originalPassword !== req.body.password &&
-        res.status(401).send("Wrong password or username!");
-        
-        const accessToken = jwt.sign(
-          { id: user._id, isAdmin: user.isAdmin },
-          process.env.SECRET_KEY,
-          { expiresIn: "5d" }
-        ); 
-        const{ ...info } = user._doc;
-        res.status(201).json({ ...info,accessToken });
+    const bytes = CryptoJS.AES.decrypt(user.password, process.env.SECRET_KEY);
+    const originalPassword = bytes.toString(CryptoJS.enc.Utf8);
 
-    } catch (error) {
-        res.status(400).send("Oops!You are doing something wrong");
-    }
-})
-    
+    originalPassword !== req.body.password &&
+      res.status(401).json("Wrong password or username!");
+
+    const accessToken = jwt.sign(
+      { id: user._id, isAdmin: user.isAdmin },
+      process.env.SECRET_KEY,
+      { expiresIn: "5d" }
+    );
+
+    const { password, ...info } = user._doc;
+
+    res.status(200).json({ ...info, accessToken });
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
 
 module.exports = router;
